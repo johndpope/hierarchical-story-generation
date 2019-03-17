@@ -1,1 +1,1 @@
-# hierarchal-story-generation
+# hierarchical-story-generation
