@@ -23,7 +23,7 @@ class WritingPrompts(Dataset):
                 target_file = root + "/train.wp_target"
             else:
                 source_file = root + "/valid.wp_source"
-                target_file = root + "/valid.wp_source"
+                target_file = root + "/valid.wp_target"
 
             with open(source_file) as f:
                 self.source_data = [s.split(' ') for s in f.readlines()]
