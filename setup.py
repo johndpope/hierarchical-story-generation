@@ -37,6 +37,8 @@ def fetch_and_cache(data_url, file, data_dir="data", force=False):
         print("Using cached version that was downloaded (UTC):", last_modified_time)
     return file_path
 
+if not os.path.isdir("./data"):
+    os.mkdir(os.fsencode("./data"))
 
 fetch_and_cache(data_url='https://dl.fbaipublicfiles.com/fairseq/data/writingPrompts.tar.gz',
                 file='writingPrompts.tar.gz',
