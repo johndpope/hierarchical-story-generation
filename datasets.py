@@ -15,7 +15,7 @@ class WritingPrompts(Dataset):
 
         source_pickle = './data/pickles/' + ('train' if self.train else 'val') + '_tokenized_source.p'
         target_pickle = './data/pickles/' + ('train' if self.train else 'val') + '_tokenized_target.p'
-        cached = os.path.isfile(source_pickle)aa
+        cached = os.path.isfile(source_pickle)
 
         if not cached:
             if self.train:
