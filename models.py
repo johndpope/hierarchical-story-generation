@@ -4,10 +4,6 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from . import FairseqDecoder, FairseqEncoder
-from fairseq.data import Dictionary
-
-
 class Model(nn.Module):
     """Base class for fairseq models."""
 
