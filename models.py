@@ -4,7 +4,9 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-class Model(nn.Module):
+from network import ConvEncoder, ConvDecoder
+
+class BaseModel(nn.Module):
     """Base class for fairseq models."""
 
     def __init__(self, encoder, decoder):
@@ -144,4 +146,90 @@ class Model(nn.Module):
 
         self.apply(apply_prepare_for_onnx_export_)
 
+class ConvModel(BaseModel):
+    """
+    A fully convolutional model, i.e. a convolutional encoder and a
+    convolutional decoder, as described in `"Convolutional Sequence to Sequence
+    Learning" (Gehring et al., 2017) <https://arxiv.org/abs/1705.03122>`_.
+
+    Args:
+        encoder (FConvEncoder): the encoder
+        decoder (FConvDecoder): the decoder
+
+    The Convolutional model provides the following named architectures and
+    command-line arguments:
+
+    .. argparse::
+        :ref: fairseq.models.fconv_parser
+        :prog:
+    """
+
+    def __init__(self, encoder, decoder):
+        super().__init__(encoder, decoder)
+        self.encoder.num_attention_layers = sum(layer is not None for layer in decoder.attention)
+
+    @staticmethod
+    def add_args(parser):
+        """Add model-specific arguments to the parser."""
+        # fmt: off
+        parser.add_argument('--dropout', type=float, metavar='D',
+                            help='dropout probability')
+        parser.add_argument('--encoder-embed-dim', type=int, metavar='N',
+                            help='encoder embedding dimension')
+        parser.add_argument('--encoder-embed-path', type=str, metavar='STR',
+                            help='path to pre-trained encoder embedding')
+        parser.add_argument('--encoder-layers', type=str, metavar='EXPR',
+                            help='encoder layers [(dim, kernel_size), ...]')
+        parser.add_argument('--decoder-embed-dim', type=int, metavar='N',
+                            help='decoder embedding dimension')
+        parser.add_argument('--decoder-embed-path', type=str, metavar='STR',
+                            help='path to pre-trained decoder embedding')
+        parser.add_argument('--decoder-layers', type=str, metavar='EXPR',
+                            help='decoder layers [(dim, kernel_size), ...]')
+        parser.add_argument('--decoder-out-embed-dim', type=int, metavar='N',
+                            help='decoder output embedding dimension')
+        parser.add_argument('--decoder-attention', type=str, metavar='EXPR',
+                            help='decoder attention [True, ...]')
+        parser.add_argument('--share-input-output-embed', action='store_true',
+                            help='share input and output embeddings (requires'
+                                 ' --decoder-out-embed-dim and --decoder-embed-dim'
+                                 ' to be equal)')
+        # fmt: on
+
+    @classmethod
+    def build_model(cls, args, task):
+        """Build a new model instance."""
+        # make sure that all args are properly defaulted (in case there are any new ones)
+        base_architecture(args)
+
+        encoder_embed_dict = None
+        if args.encoder_embed_path:
+            encoder_embed_dict = utils.parse_embedding(args.encoder_embed_path)
+            utils.print_embed_overlap(encoder_embed_dict, task.source_dictionary)
+
+        decoder_embed_dict = None
+        if args.decoder_embed_path:
+            decoder_embed_dict = utils.parse_embedding(args.decoder_embed_path)
+            utils.print_embed_overlap(decoder_embed_dict, task.target_dictionary)
+
+        encoder = ConvEncoder(
+            dictionary=task.source_dictionary,
+            embed_dim=args.encoder_embed_dim,
+            embed_dict=encoder_embed_dict,
+            convolutions=eval(args.encoder_layers),
+            dropout=args.dropout,
+            max_positions=args.max_source_positions,
+        )
+        decoder = ConvDecoder(
+            dictionary=task.target_dictionary,
+            embed_dim=args.decoder_embed_dim,
+            embed_dict=decoder_embed_dict,
+            convolutions=eval(args.decoder_layers),
+            out_embed_dim=args.decoder_out_embed_dim,
+            attention=eval(args.decoder_attention),
+            dropout=args.dropout,
+            max_positions=args.max_target_positions,
+            share_embed=args.share_input_output_embed,
+        )
+        return ConvModel(encoder, decoder)
 
