@@ -10,11 +10,12 @@ import random
 import torch
 
 from networks import ConvEncoder, ConvDecoder
+from losses import LabelSmoothedCrossEntropyCriterion
+
 import models
 
 from fairseq import Dictionary
-
-def main():
+def make_model():
     source_dictionary = Dictionary.load("data/data-bin/writingPrompts/dict.wp_source.txt")
     target_dictionary = Dictionary.load("data/data-bin/writingPrompts/dict.wp_target.txt")
 
@@ -45,5 +46,12 @@ def main():
     )
 
     model = models.BaseModel(encoder, decoder)
+    return model
+
+
+def main():
+    model = make_model()
+    loss = LabelSmoothedCrossEntropyCriterion
+
 
 
